@@ -4,6 +4,7 @@ import os
 import tempfile
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # Limit uploads to 2GB
 
 @app.route('/', methods=['GET'])
 def home():
@@ -23,15 +24,17 @@ def trim_video():
     input_path = tempfile.mktemp(suffix='.webm')
     file.save(input_path)
     
-    # Trim with FFmpeg (stream copy for speed)
+    # Trim with FFmpeg (re-encode for arbitrary timestamps)
     output_path = tempfile.mktemp(suffix='.webm')
     try:
         subprocess.run([
-            'ffmpeg', '-i', input_path, '-to', trim_time, '-c', 'copy', output_path
-        ], check=True)
+            'ffmpeg', '-i', input_path, '-to', trim_time,
+            '-c:v', 'libvpx', '-c:a', 'libopus', '-crf', '10', '-b:v', '2M',
+            output_path
+        ], check=True, capture_output=True, text=True)  # Capture output for debugging
     except subprocess.CalledProcessError as e:
         os.remove(input_path)
-        return f'FFmpeg error: {e}', 500
+        return f'FFmpeg error: {e.stderr}', 500
     
     # Send trimmed file back
     response = send_file(output_path, mimetype='video/webm', as_attachment=True, download_name='trimmed.webm')
