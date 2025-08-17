@@ -16,5 +16,5 @@ COPY app.py .
 # Expose port
 EXPOSE 80
 
-# Run the app
-CMD ["python", "app.py"]
+# Run with Gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:80", "app:app"]
