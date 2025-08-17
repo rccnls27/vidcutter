@@ -5,6 +5,10 @@ import tempfile
 
 app = Flask(__name__)
 
+@app.route('/', methods=['GET'])
+def home():
+    return "VidCutter API is running! Use POST /trim with 'video' file and 'trim_time' param."
+
 @app.route('/trim', methods=['POST'])
 def trim_video():
     if 'video' not in request.files:
